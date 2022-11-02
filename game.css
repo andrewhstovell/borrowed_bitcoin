@@ -1,0 +1,22 @@
+body {
+    padding: 10px;
+}
+
+#canvas {
+    display: block;
+    background: blue;
+}
+
+#game {
+    height: 600px;
+    height: 100%;
+    width: 100%;
+    border-style:groove;
+    border-width: 10px;
+    border-color: orange;
+}
+
+#site {
+    height: 600px;
+    background-color: black;
+}
