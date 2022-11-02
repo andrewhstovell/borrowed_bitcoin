@@ -94,22 +94,22 @@ const buttonCostStyle = new PIXI.TextStyle({
 
 // LOAD TEXTURES
 const droneTextures = [
-  PIXI.Texture.from('./borrowed_bitcoin/assets/drone1.png'), PIXI.Texture.from('./borrowed_bitcoin/assets/drone2.png'),
-  PIXI.Texture.from('./borrowed_bitcoin/assets/drone3.png'), PIXI.Texture.from('./borrowed_bitcoin/assets/drone4.png')
+  PIXI.Texture.from('./assets/drone1.png'), PIXI.Texture.from('./assets/drone2.png'),
+  PIXI.Texture.from('./assets/drone3.png'), PIXI.Texture.from('./assets/drone4.png')
 ];
-const upgradeButtonTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/button.png');
-const upgradeButtonHoverTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/button_hover.png');
-const upgradeButtonDownTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/button_down.png');
-const warningTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/warning.png');
-const crateTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/crate.png');
-const bitcoinLogoTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/bitcoin_logo.png');
-const gpuTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/gpu.png');
-const cityTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/map.png');
-const HQHighlightTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/hq_highlight.png');
-const scannerTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/scan.png');
-const tutorialTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/help.png');
-const radarEmptyTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/radar1.png');
-const radarFullTexture = PIXI.Texture.from('./borrowed_bitcoin/assets/radar2.png');
+const upgradeButtonTexture = PIXI.Texture.from('./assets/button.png');
+const upgradeButtonHoverTexture = PIXI.Texture.from('./assets/button_hover.png');
+const upgradeButtonDownTexture = PIXI.Texture.from('./assets/button_down.png');
+const warningTexture = PIXI.Texture.from('./assets/warning.png');
+const crateTexture = PIXI.Texture.from('./assets/crate.png');
+const bitcoinLogoTexture = PIXI.Texture.from('./assets/bitcoin_logo.png');
+const gpuTexture = PIXI.Texture.from('./assets/gpu.png');
+const cityTexture = PIXI.Texture.from('./assets/map.png');
+const HQHighlightTexture = PIXI.Texture.from('./assets/hq_highlight.png');
+const scannerTexture = PIXI.Texture.from('./assets/scan.png');
+const tutorialTexture = PIXI.Texture.from('./assets/help.png');
+const radarEmptyTexture = PIXI.Texture.from('./assets/radar1.png');
+const radarFullTexture = PIXI.Texture.from('./assets/radar2.png');
 
 // Create Player Balance Text
 var balanceText = new PIXI.Text("" + state.playerBalance, balanceStyle);
