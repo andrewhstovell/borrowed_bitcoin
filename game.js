@@ -230,6 +230,7 @@ document.addEventListener('keyup', (event) => {
     drone.rotation = 0;
     return;
   }
+
 }, false);
 
 const ticker = new PIXI.Ticker();
@@ -341,7 +342,7 @@ function onButtonUp() {
             break;
           case 1:
             state.movementSpeed += 0.05;
-            buttonCurrentValueTexts[buttonID].text = state.movementSpeed;
+            buttonCurrentValueTexts[buttonID].text = state.movementSpeed.toFixed(2);
             break;
           case 2:
             state.scanDiameter += 10;
@@ -349,7 +350,7 @@ function onButtonUp() {
             break;
           case 3:
             state.cooldownTime -= 0.1;
-            buttonCurrentValueTexts[buttonID].text = state.cooldownTime + 's';
+            buttonCurrentValueTexts[buttonID].text = state.cooldownTime.toFixed(1) + 's';
             break;
           case 4:
             state.pickUpRange++;
@@ -358,7 +359,7 @@ function onButtonUp() {
         }
         updateBalance(-state.upgradeCost[buttonID]);
         state.upgradeCost[buttonID] += upgradeCostOriginal[buttonID];
-        upgradeCostTexts[buttonID].text = state.upgradeCost[buttonID] + " BTC";
+        upgradeCostTexts[buttonID].text = state.upgradeCost[buttonID].toFixed(4) + " BTC";
         
       }
   } else {
