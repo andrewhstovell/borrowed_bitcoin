@@ -3,6 +3,8 @@ An example pixi.js game whipped up in a day just for fun and a bit of JavaScript
 
 Feel free to submit issues and pull requests!
 
+![Screenshot of the 2D Game](/splash.png?raw=true "Splash Image")
+
 ## Blurb
 Use a your drone to "borrow" gamers GPU's to build your bitcoin mining empire!
 
