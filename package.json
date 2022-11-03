@@ -1,0 +1,28 @@
+{
+  "name": "borrowed_bitcoin",
+  "version": "1.0.0",
+  "description": "An example pixi.js game whipped up in a day just for fun and a bit of JavaScript Practice.",
+  "main": "game.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewhstovell/borrowed_bitcoin.git"
+  },
+  "keywords": [
+    "pixi",
+    "game",
+    "drone",
+    "crypto",
+    "fun"
+  ],
+  "author": "Andrew Stovell",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/andrewhstovell/borrowed_bitcoin/issues"
+  },
+  "homepage": "https://github.com/andrewhstovell/borrowed_bitcoin#readme"
+  
+}

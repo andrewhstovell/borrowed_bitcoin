@@ -1,8 +1,6 @@
-// SET UP THE GAME ENVIRONMENT
-// Disable WebGL Aliasing
-PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+import {textures, fonts} from "./assets.js";
 
-const site = document.getElementById('site');
+// SET UP THE GAME ENVIRONMENT
 const gameContainer = document.getElementById('game');
 const canvas = document.getElementById('canvas');
 
@@ -56,68 +54,15 @@ function resize() {
      renderer.resize(game.viewPortWidth, game.viewPortHeight);
 }
 
-// LOAD TEXT STYLES
-const balanceStyle = new PIXI.TextStyle({
-  fill: "white",
-  fontFamily: "Helvetica",
-  fontVariant: "small-caps",
-  fontSize: 40,
-  fontWeight: "bold"
-});
 
-const buttonDescriptionStyle = new PIXI.TextStyle({
-  fill: "black",
-  fontFamily: "Helvetica",
-  fontStyle: "italic",
-  fontVariant: "small-caps",
-  fontSize: 14,
-  fontWeight: "bold"
-});
-
-const buttonCurrentValueStyle = new PIXI.TextStyle({
-  fill: "#3cc039", // green
-  fontFamily: "Helvetica",
-  fontSize: 13,
-  fontStyle: "italic",
-  fontVariant: "small-caps",
-  fontWeight: "bold"
-});
-
-const buttonCostStyle = new PIXI.TextStyle({
-  fill: "#e6a00a", // orange
-  fontFamily: "Helvetica",
-  fontSize: 13,
-  fontStyle: "italic",
-  fontVariant: "small-caps",
-  fontWeight: "bold"
-});
-
-// LOAD TEXTURES
-const droneTextures = [
-  PIXI.Texture.from('./assets/drone1.png'), PIXI.Texture.from('./assets/drone2.png'),
-  PIXI.Texture.from('./assets/drone3.png'), PIXI.Texture.from('./assets/drone4.png')
-];
-const upgradeButtonTexture = PIXI.Texture.from('./assets/button.png');
-const upgradeButtonHoverTexture = PIXI.Texture.from('./assets/button_hover.png');
-const upgradeButtonDownTexture = PIXI.Texture.from('./assets/button_down.png');
-const warningTexture = PIXI.Texture.from('./assets/warning.png');
-const crateTexture = PIXI.Texture.from('./assets/crate.png');
-const bitcoinLogoTexture = PIXI.Texture.from('./assets/bitcoin_logo.png');
-const gpuTexture = PIXI.Texture.from('./assets/gpu.png');
-const cityTexture = PIXI.Texture.from('./assets/map.png');
-const HQHighlightTexture = PIXI.Texture.from('./assets/hq_highlight.png');
-const scannerTexture = PIXI.Texture.from('./assets/scan.png');
-const tutorialTexture = PIXI.Texture.from('./assets/help.png');
-const radarEmptyTexture = PIXI.Texture.from('./assets/radar1.png');
-const radarFullTexture = PIXI.Texture.from('./assets/radar2.png');
 
 // Create Player Balance Text
-var balanceText = new PIXI.Text("" + state.playerBalance, balanceStyle);
+var balanceText = new PIXI.Text("" + state.playerBalance, fonts.balance);
 balanceText.position.set(80, 14);
 
 // CREATE AND CONFIGURE SPRITES
 // Drone
-const drone = new PIXI.Sprite(droneTextures[0]);
+const drone = new PIXI.Sprite(textures.drone[0]);
 drone.anchor.set(0.5);
 drone.position.set(game.viewPortWidth / 2, game.viewPortHeight / 2);
 let droneLeft = 0, droneRight = 0, droneUp = 0, droneDown = 0; // current movement
@@ -128,43 +73,43 @@ const turningRotation = 0.1; // For rotating the drones texture during movement
 let droneScalar = 0;
 
 // Out-of-bounds Warning
-const warning = new PIXI.Sprite(warningTexture);
+const warning = new PIXI.Sprite(textures.warning);
 warning.anchor.set(0.5);
 warning.position.set(game.viewPortWidth / 2, drone.x - 50);
 let warningVisable = false;
 
 // Crate (Collected GPU)
-const crate = new PIXI.Sprite(crateTexture);
+const crate = new PIXI.Sprite(textures.crate);
 crate.anchor.set(0.5);
 
 // Bitcoin Logo
-const bitcoinLogo = new PIXI.Sprite(bitcoinLogoTexture);
+const bitcoinLogo = new PIXI.Sprite(textures.bitcoinLogo);
 bitcoinLogo.position.set(5, 5);
 
 // City
-const city = new PIXI.Sprite(cityTexture);
+const city = new PIXI.Sprite(textures.city);
 city.anchor.set(0.5);
 city.position.set(game.viewPortWidth / 2, game.viewPortHeight / 2);
 
 // HQ Highlight Box
-const hqHighlight = new PIXI.Sprite(HQHighlightTexture);
+const hqHighlight = new PIXI.Sprite(textures.hq_highlighter);
 hqHighlight.anchor.set(0.5);
 hqHighlight.position.set(city.x, city.y);
 
 // Scanner Pulse
-const scanner = new PIXI.Sprite(scannerTexture);
+const scanner = new PIXI.Sprite(textures.scanner);
 scanner.anchor.set(0.5);
 let currentScannerScale = 0;
 let scanning = false;
 
 // Tutorial Instructions
-const tutorial = new PIXI.Sprite(tutorialTexture);
+const tutorial = new PIXI.Sprite(textures.tutorial);
 tutorial.anchor.set(0.5, 1);
 tutorial.position.set(game.viewPortWidth / 2, game.viewPortHeight);
 let tutorialShowing = true;
 
 // Radar Indicator
-const radar = new PIXI.Sprite(radarFullTexture);
+const radar = new PIXI.Sprite(textures.radar_ready);
 radar.anchor.set(0.5);
 radar.position.set(40, game.viewPortHeight - 40);
 
@@ -248,11 +193,11 @@ stage.addChild(balanceText);
 // Create upgrade buttons
 const buttons = [];
 const buttonCurrentValueTexts = [
-  new PIXI.Text(state.gpusAvailable, buttonCurrentValueStyle),
-  new PIXI.Text(state.movementSpeed, buttonCurrentValueStyle),
-  new PIXI.Text(state.scanDiameter, buttonCurrentValueStyle),
-  new PIXI.Text(state.cooldownTime + 's', buttonCurrentValueStyle),
-  new PIXI.Text(state.pickUpRange, buttonCurrentValueStyle)
+  new PIXI.Text(state.gpusAvailable, fonts.button_current_value),
+  new PIXI.Text(state.movementSpeed, fonts.button_current_value),
+  new PIXI.Text(state.scanDiameter, fonts.button_current_value),
+  new PIXI.Text(state.cooldownTime + 's', fonts.button_current_value),
+  new PIXI.Text(state.pickUpRange, fonts.button_current_value)
 ];
 
 const upgradeCostOriginal = [
@@ -264,14 +209,14 @@ const upgradeCostOriginal = [
 ];
 
 const upgradeCostTexts = [
-  new PIXI.Text(state.upgradeCost[0] + " BTC", buttonCostStyle),
-  new PIXI.Text(state.upgradeCost[1] + " BTC", buttonCostStyle),
-  new PIXI.Text(state.upgradeCost[2] + " BTC", buttonCostStyle),
-  new PIXI.Text(state.upgradeCost[3] + " BTC", buttonCostStyle),
-  new PIXI.Text(state.upgradeCost[4] + " BTC", buttonCostStyle)
+  new PIXI.Text(state.upgradeCost[0] + " BTC", fonts.button_cost),
+  new PIXI.Text(state.upgradeCost[1] + " BTC", fonts.button_cost),
+  new PIXI.Text(state.upgradeCost[2] + " BTC", fonts.button_cost),
+  new PIXI.Text(state.upgradeCost[3] + " BTC", fonts.button_cost),
+  new PIXI.Text(state.upgradeCost[4] + " BTC", fonts.button_cost)
 ];
 
-buttonDescriptors = [
+let buttonDescriptors = [
   "GPU's in world' +1",
   "Drone Speed +0.05",
   "Scan Range +10",
@@ -280,7 +225,7 @@ buttonDescriptors = [
 ];
 
 for (let i = 0; i < buttonDescriptors.length; i++) {
-  const button = new PIXI.Sprite(upgradeButtonTexture);
+  const button = new PIXI.Sprite(textures.upgradeButton);
 
   button.anchor.x = 1;
   button.position.set(game.viewPortWidth, i * 48);
@@ -301,7 +246,7 @@ for (let i = 0; i < buttonDescriptors.length; i++) {
   buttons.push(button);
 
   // Set upgrade description texts
-  var text = new PIXI.Text(buttonDescriptors[i], buttonDescriptionStyle);
+  var text = new PIXI.Text(buttonDescriptors[i], fonts.button_description);
   text.position.set(game.viewPortWidth - 155, 5 + i * 48);
   stage.addChild(text);
 
@@ -317,14 +262,14 @@ for (let i = 0; i < buttonDescriptors.length; i++) {
 
 function onButtonDown() {
   this.isdown = true;
-  this.texture = upgradeButtonDownTexture;
+  this.texture = textures.upgradeButton_down;
   this.alpha = 1;
 }
 
 function onButtonUp() {
   this.isdown = false;
   if (this.isOver) {
-      this.texture = upgradeButtonHoverTexture;
+      this.texture = textures.upgradeButton_hover;
       // determine the index of the button pressed
       let buttonID = 0;
       for (let i = 0; i < buttons.length; i++){
@@ -363,7 +308,7 @@ function onButtonUp() {
         
       }
   } else {
-      this.texture = upgradeButtonTexture;
+      this.texture = textures.upgradeButton;
   }
 }
 
@@ -372,7 +317,7 @@ function onButtonOver() {
   if (this.isdown) {
       return;
   }
-  this.texture = upgradeButtonHoverTexture;
+  this.texture = textures.upgradeButton_hover;
 }
 
 function onButtonOut() {
@@ -380,7 +325,7 @@ function onButtonOut() {
   if (this.isdown) {
       return;
   }
-  this.texture = upgradeButtonTexture;
+  this.texture = textures.upgradeButton;
 }
 
 // Place the starter Gpu's
@@ -439,7 +384,7 @@ function onUpdate() {
     }
 
     // Animate the drones props
-    drone.texture = droneTextures[Math.floor(game.delta * 6) % 4];
+    drone.texture = textures.drone[Math.floor(game.delta * 6) % 4];
 
     // Animate the drone sway
     drone.x = drone.x + Math.sin(game.delta/3) * 0.25;
@@ -458,7 +403,7 @@ function onUpdate() {
     if (state.scanCooldown > 0){
       state.scanCooldown -= state.cooldownRate;
     } else {
-      radar.texture = radarFullTexture;
+      radar.texture = textures.radar_ready;
     }
 
     radar.rotation += .01;
@@ -483,7 +428,7 @@ function placeGpu() {
   let x = getRandomInt(game.worldWidth - buffer);
   let y = getRandomInt(game.worldHeight - buffer - 300); // 300 prevents Gpu's spawning in water
 
-  const gpu = new PIXI.Sprite(gpuTexture);
+  const gpu = new PIXI.Sprite(textures.gpu);
   gpu.anchor.set(0.5);
 
   gpu.x = (city.x - game.worldWidth / 2) + (buffer / 2) + x;
@@ -500,7 +445,7 @@ function scan() {
     scanner.x = drone.x;
     scanner.y = drone.y;
     stage.addChild(scanner);
-    radar.texture = radarEmptyTexture;
+    radar.texture = textures.radar_empty;
 
     // Show Gpu's in range
     state.gpuArray.forEach(function(gpu) {
