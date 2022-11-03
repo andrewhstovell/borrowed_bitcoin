@@ -1,44 +1,26 @@
-import {textures, fonts} from "./assets.js";
+import {textures, fonts, ui, drone, initializeView} from "./game/assets.js";
+import {player, scanner, world} from "./game/state.js";
 
 // SET UP THE GAME ENVIRONMENT
-const gameContainer = document.getElementById('game');
 const canvas = document.getElementById('canvas');
 
-var game = {
-  viewPortWidth: gameContainer.clientWidth,
-  viewPortHeight: gameContainer.clientHeight,
-  worldWidth:  2560,
-  worldHeight: 1440,
-  delta: 0
-};
+var HQLocation = {x: world.viewport.width/2, y: world.viewport.height/2};
+let tutorialShowing = true;
+var player_out_of_bounds = false;
 
-var HQLocation = {x:game.viewPortWidth/2, y:game.viewPortHeight/2};
+var upgradeCosts = [];
+var upgradeCostOriginal = [];
 
-// Game State Variables
-var state = {
-  playerBalance: 0.0001,
-  gpuValue: 0.0001,
-  gpusAvailable: 4,
-  gpuArray: [],
-  movementSpeed: 1,
-  gpuOnboard: false,
-  pickUpRange: 50,
-  scanCooldown: 0,
-  cooldownRate: 0.01,
-  cooldownTime: 3, //sec
-  scanDiameter: 400, //px
-  upgradeCost: [
-    0.0008,
-    0.0006,
-    0.0004,
-    0.0003,
-    0.0002
-  ]
-};
+let cost = 0.0010;
+for (var t = 0; t < 5; t++) {
+  upgradeCosts.push(cost);
+  upgradeCostOriginal.push(cost);
+  cost -= 0.0002;
+}
 
 // Create the main rendering view
 const renderer = new PIXI.Renderer({
-  width: game.viewPortWidth, height: game.viewPortHeight,
+  width: world.viewport.width, height: world.viewport.width,
   view: canvas,
   resolution: window.devicePixelRatio,
   autoDensity: true,
@@ -48,97 +30,45 @@ const renderer = new PIXI.Renderer({
 // Create the main game Stage
 const stage = new PIXI.Container();
 
+initializeView(world.viewport.width, world.viewport.height);
+
 // Allow resizing of window
 window.addEventListener('resize', resize);
 function resize() {
-     renderer.resize(game.viewPortWidth, game.viewPortHeight);
+     renderer.resize(world.viewport.width, world.viewport.height);
 }
 
-
+resize();
 
 // Create Player Balance Text
-var balanceText = new PIXI.Text("" + state.playerBalance, fonts.balance);
+var balanceText = new PIXI.Text("" + player.balance, fonts.balance);
 balanceText.position.set(80, 14);
 
-// CREATE AND CONFIGURE SPRITES
-// Drone
-const drone = new PIXI.Sprite(textures.drone[0]);
-drone.anchor.set(0.5);
-drone.position.set(game.viewPortWidth / 2, game.viewPortHeight / 2);
-let droneLeft = 0, droneRight = 0, droneUp = 0, droneDown = 0; // current movement
-const origDroneWidth = drone.width;
-const origDroneHeight = drone.height;
-const movementScalar = 0.85; // For scaling the drones texture during movement
-const turningRotation = 0.1; // For rotating the drones texture during movement
-let droneScalar = 0;
-
-// Out-of-bounds Warning
-const warning = new PIXI.Sprite(textures.warning);
-warning.anchor.set(0.5);
-warning.position.set(game.viewPortWidth / 2, drone.x - 50);
-let warningVisable = false;
-
-// Crate (Collected GPU)
-const crate = new PIXI.Sprite(textures.crate);
-crate.anchor.set(0.5);
-
-// Bitcoin Logo
-const bitcoinLogo = new PIXI.Sprite(textures.bitcoinLogo);
-bitcoinLogo.position.set(5, 5);
-
-// City
-const city = new PIXI.Sprite(textures.city);
-city.anchor.set(0.5);
-city.position.set(game.viewPortWidth / 2, game.viewPortHeight / 2);
-
-// HQ Highlight Box
-const hqHighlight = new PIXI.Sprite(textures.hq_highlighter);
-hqHighlight.anchor.set(0.5);
-hqHighlight.position.set(city.x, city.y);
-
-// Scanner Pulse
-const scanner = new PIXI.Sprite(textures.scanner);
-scanner.anchor.set(0.5);
-let currentScannerScale = 0;
-let scanning = false;
-
-// Tutorial Instructions
-const tutorial = new PIXI.Sprite(textures.tutorial);
-tutorial.anchor.set(0.5, 1);
-tutorial.position.set(game.viewPortWidth / 2, game.viewPortHeight);
-let tutorialShowing = true;
-
-// Radar Indicator
-const radar = new PIXI.Sprite(textures.radar_ready);
-radar.anchor.set(0.5);
-radar.position.set(40, game.viewPortHeight - 40);
-
-// SETUP EVENT LISTNERS
 // Listen for Key Presses
 document.addEventListener('keydown', (event) => {
   if (event.key === 'w') {
-    droneUp = -state.movementSpeed;
-    drone.height = origDroneHeight * movementScalar;
+    drone.heading.up = -player.speed;
+    drone.sprite.height = drone.originalHeight * drone.movementScalar;
     return;
   }
 
   if (event.key === 's') {
-    droneDown = state.movementSpeed;
-    drone.height = origDroneHeight * movementScalar;
+    drone.heading.down = player.speed;
+    drone.sprite.height = drone.originalHeight * drone.movementScalar;
     return;
   }
 
   if (event.key === 'a') {
-    droneLeft = -state.movementSpeed;
-    drone.width = origDroneWidth * movementScalar;
-    drone.rotation = -turningRotation;
+    drone.heading.left = -player.speed;
+    drone.sprite.width = drone.originalWidth * drone.movementScalar;
+    drone.sprite.rotation = -drone.turningRotation;
     return;
   }
 
   if (event.key === 'd') {
-    droneRight = state.movementSpeed;
-    drone.width = origDroneWidth * movementScalar;
-    drone.rotation = turningRotation;
+    drone.heading.right = player.speed;
+    drone.sprite.width = drone.originalWidth * drone.movementScalar;
+    drone.sprite.rotation = drone.turningRotation;
     return;
   }
 
@@ -151,31 +81,30 @@ document.addEventListener('keydown', (event) => {
 // Listen for Key Releases
 document.addEventListener('keyup', (event) => {
   if (event.key === 'w') {
-    droneUp = 0;
-    drone.height = origDroneHeight;
+    drone.heading.up = 0;
+    drone.sprite.height = drone.originalHeight;
     return;
   }
 
   if (event.key === 's') {
-    droneDown = 0;
-    drone.height = origDroneHeight;
+    drone.heading.down = 0;
+    drone.sprite.height = drone.originalHeight;
     return;
   }
 
   if (event.key === 'a') {
-    droneLeft = 0;
-    drone.width = origDroneWidth;
-    drone.rotation = 0;
+    drone.heading.left = 0;
+    drone.sprite.width = drone.originalWidth;
+    drone.sprite.rotation = 0;
     return;
   }
 
   if (event.key === 'd') {
-    droneRight = 0;
-    drone.width = origDroneWidth;
-    drone.rotation = 0;
+    drone.heading.right = 0;
+    drone.sprite.width = drone.originalWidth;
+    drone.sprite.rotation = 0;
     return;
   }
-
 }, false);
 
 const ticker = new PIXI.Ticker();
@@ -183,38 +112,27 @@ ticker.add(onUpdate);
 ticker.start();
 
 // Add sprites to stage
-stage.addChild(city);
-stage.addChild(drone);
-stage.addChild(tutorial);
-stage.addChild(radar);
-stage.addChild(bitcoinLogo);
+stage.addChild(ui.city);
+stage.addChild(drone.sprite);
+stage.addChild(ui.scanner_state_indicator);
+stage.addChild(ui.tutorial);
+stage.addChild(ui.bitcoinLogo);
 stage.addChild(balanceText);
 
 // Create upgrade buttons
 const buttons = [];
 const buttonCurrentValueTexts = [
-  new PIXI.Text(state.gpusAvailable, fonts.button_current_value),
-  new PIXI.Text(state.movementSpeed, fonts.button_current_value),
-  new PIXI.Text(state.scanDiameter, fonts.button_current_value),
-  new PIXI.Text(state.cooldownTime + 's', fonts.button_current_value),
-  new PIXI.Text(state.pickUpRange, fonts.button_current_value)
+  new PIXI.Text(world.gpuQuantity, fonts.button_current_value),
+  new PIXI.Text(player.speed, fonts.button_current_value),
+  new PIXI.Text(scanner.diameter, fonts.button_current_value),
+  new PIXI.Text(scanner.cooldownTime + 's', fonts.button_current_value),
+  new PIXI.Text(player.pickUpRange, fonts.button_current_value)
 ];
 
-const upgradeCostOriginal = [
-  0.0008,
-  0.0006,
-  0.0004,
-  0.0003,
-  0.0002
-];
-
-const upgradeCostTexts = [
-  new PIXI.Text(state.upgradeCost[0] + " BTC", fonts.button_cost),
-  new PIXI.Text(state.upgradeCost[1] + " BTC", fonts.button_cost),
-  new PIXI.Text(state.upgradeCost[2] + " BTC", fonts.button_cost),
-  new PIXI.Text(state.upgradeCost[3] + " BTC", fonts.button_cost),
-  new PIXI.Text(state.upgradeCost[4] + " BTC", fonts.button_cost)
-];
+const upgradeCostTexts = [];
+for (var u = 0; u < upgradeCosts.length; u++) {
+  upgradeCostTexts.push(new PIXI.Text(upgradeCosts[u].toFixed(4) + " BTC", fonts.button_cost));
+}
 
 let buttonDescriptors = [
   "GPU's in world' +1",
@@ -228,7 +146,7 @@ for (let i = 0; i < buttonDescriptors.length; i++) {
   const button = new PIXI.Sprite(textures.upgradeButton);
 
   button.anchor.x = 1;
-  button.position.set(game.viewPortWidth, i * 48);
+  button.position.set(world.viewport.width, i * 48);
 
   // make the button interactive
   button.interactive = true;
@@ -237,7 +155,6 @@ for (let i = 0; i < buttonDescriptors.length; i++) {
   button
   .on('mousedown', onButtonDown)
   .on('mouseup', onButtonUp)
-  .on('mouseupoutside', onButtonUp)
   .on('mouseover', onButtonOver)
   .on('mouseout', onButtonOut)
 
@@ -247,27 +164,27 @@ for (let i = 0; i < buttonDescriptors.length; i++) {
 
   // Set upgrade description texts
   var text = new PIXI.Text(buttonDescriptors[i], fonts.button_description);
-  text.position.set(game.viewPortWidth - 155, 5 + i * 48);
+  text.position.set(world.viewport.width - 155, 5 + i * 48);
   stage.addChild(text);
 
   // Set upgrade current value texts
-  buttonCurrentValueTexts[i].position.set(game.viewPortWidth - 155, 22 + i * 48);
+  buttonCurrentValueTexts[i].position.set(world.viewport.width - 155, 22 + i * 48);
   stage.addChild(buttonCurrentValueTexts[i]);
 
   // Set upgrade cost texts
   upgradeCostTexts[i].anchor.x = 1;
-  upgradeCostTexts[i].position.set(game.viewPortWidth - 2, 22 + i * 48);
+  upgradeCostTexts[i].position.set(world.viewport.width - 2, 22 + i * 48);
   stage.addChild(upgradeCostTexts[i]);
 }
 
 function onButtonDown() {
-  this.isdown = true;
+  this.isDown = true;
   this.texture = textures.upgradeButton_down;
   this.alpha = 1;
 }
 
 function onButtonUp() {
-  this.isdown = false;
+  this.isDown = false;
   if (this.isOver) {
       this.texture = textures.upgradeButton_hover;
       // determine the index of the button pressed
@@ -278,33 +195,33 @@ function onButtonUp() {
         }
       }
 
-      if (state.playerBalance >= state.upgradeCost[buttonID]) {
+      if (player.balance >= upgradeCosts[buttonID]) {
         switch (buttonID) {
           case 0:
-            state.gpusAvailable++;
+            world.gpuQuantity++;
             placeGpu();
-            buttonCurrentValueTexts[buttonID].text = state.gpusAvailable;
+            buttonCurrentValueTexts[buttonID].text = world.gpuQuantity;
             break;
           case 1:
-            state.movementSpeed += 0.05;
-            buttonCurrentValueTexts[buttonID].text = state.movementSpeed.toFixed(2);
+            player.speed += 0.05;
+            buttonCurrentValueTexts[buttonID].text = player.speed.toFixed(2);
             break;
           case 2:
-            state.scanDiameter += 10;
-            buttonCurrentValueTexts[buttonID].text = state.scanDiameter;
+            scanner.diameter += 10;
+            buttonCurrentValueTexts[buttonID].text = scanner.diameter;
             break;
           case 3:
-            state.cooldownTime -= 0.1;
-            buttonCurrentValueTexts[buttonID].text = state.cooldownTime.toFixed(1) + 's';
+            scanner.cooldownTime -= 0.1;
+            buttonCurrentValueTexts[buttonID].text = scanner.cooldownTime.toFixed(1) + 's';
             break;
           case 4:
-            state.pickUpRange++;
-            buttonCurrentValueTexts[buttonID].text = state.pickUpRange;
+            player.pickUpRange++;
+            buttonCurrentValueTexts[buttonID].text = player.pickUpRange;
             break;
         }
-        updateBalance(-state.upgradeCost[buttonID]);
-        state.upgradeCost[buttonID] += upgradeCostOriginal[buttonID];
-        upgradeCostTexts[buttonID].text = state.upgradeCost[buttonID].toFixed(4) + " BTC";
+        updateBalance(-upgradeCosts[buttonID]);
+        upgradeCosts[buttonID] += upgradeCostOriginal[buttonID];
+        upgradeCostTexts[buttonID].text = upgradeCosts[buttonID].toFixed(4) + " BTC";
         
       }
   } else {
@@ -314,7 +231,7 @@ function onButtonUp() {
 
 function onButtonOver() {
   this.isOver = true;
-  if (this.isdown) {
+  if (this.isDown) {
       return;
   }
   this.texture = textures.upgradeButton_hover;
@@ -322,134 +239,134 @@ function onButtonOver() {
 
 function onButtonOut() {
   this.isOver = false;
-  if (this.isdown) {
+  if (this.isDown) {
       return;
   }
   this.texture = textures.upgradeButton;
 }
 
 // Place the starter Gpu's
-for (let i = 0; i < state.gpusAvailable; i++) {
+for (let i = 0; i < world.gpuQuantity; i++) {
   placeGpu();
 }
 
 function onUpdate() {
-    game.delta += 0.1;
+    world.delta += 0.1;
 
     // Ensure that the drone cannot leave the city bounds
-    if (drone.x > city.x + city.width / 2 || drone.x < city.x - city.width / 2
-      || drone.y > city.y + city.height / 2 || drone.y < city.y - city.height / 2 ) {
+    if (drone.sprite.x > ui.city.x + ui.city.width / 2 || drone.sprite.x < ui.city.x - ui.city.width / 2
+      || drone.sprite.y > ui.city.y + ui.city.height / 2 || drone.sprite.y < ui.city.y - ui.city.height / 2 ) {
         
-        warningVisable = true;
-        stage.addChild(warning);
-        moveTowardCenter(city);
+        player_out_of_bounds = true;
+        stage.addChild(ui.oob_warning);
+        moveTowardCenter(ui.city);
         moveTowardCenter(HQLocation);
-        moveTowardCenter(hqHighlight);
-        state.gpuArray.forEach(function(gpu) {
+        moveTowardCenter(ui.hq_highlighter);
+        world.gpus.forEach(function(gpu) {
           moveTowardCenter(gpu);
         });
     } else {
-      updateRelativePosition(city);
+      updateRelativePosition(ui.city);
       updateRelativePosition(HQLocation);
-      updateRelativePosition(hqHighlight);
-      state.gpuArray.forEach(function(gpu) {
+      updateRelativePosition(ui.hq_highlighter);
+      world.gpus.forEach(function(gpu) {
         updateRelativePosition(gpu);
   
         if (stage.children.includes(gpu)){
           // Animate the gpu bobbing
-          gpu.y = gpu.y + Math.sin(game.delta/2) * .3;
+          gpu.y = gpu.y + Math.sin(world.delta/2) * .3;
   
-          if (distanceBetween(gpu, drone) <= state.pickUpRange &&
-              state.gpuOnboard == false){
+          if (distanceBetween(gpu, drone.sprite) <= player.pickUpRange &&
+              player.gpuOnboard == false){
                 loadOntoDrone(gpu);
           }
         }
       });
 
-      warningVisable = false;
-      stage.removeChild(warning);
+      player_out_of_bounds = false;
+      stage.removeChild(ui.oob_warning);
     }
 
-    if (state.gpuOnboard){
-      crate.x = drone.x;
-      crate.y = drone.y;
+    if (player.gpuOnboard){
+      ui.crate.x = drone.sprite.x;
+      ui.crate.y = drone.sprite.y;
 
-      if (distanceBetween(drone, HQLocation) < 100){
+      if (distanceBetween(drone.sprite, HQLocation) < 100){
         offloadFromDrone();
       }
     }
 
-    if (warningVisable == true){
-      warning.scale.set(Math.sin(game.delta/2) + 1, Math.sin(game.delta/2) + 1)
+    if (player_out_of_bounds == true){
+      ui.oob_warning.scale.set(Math.sin(world.delta/2) + 1, Math.sin(world.delta/2) + 1)
     }
 
     // Animate the drones props
-    drone.texture = textures.drone[Math.floor(game.delta * 6) % 4];
+    drone.sprite.texture = textures.drone[Math.floor(world.delta * 6) % 4];
 
     // Animate the drone sway
-    drone.x = drone.x + Math.sin(game.delta/3) * 0.25;
+    drone.sprite.x = drone.sprite.x + Math.sin(world.delta/3) * 0.25;
 
     if (tutorialShowing) {
-      tutorial.y = game.viewPortHeight - 20 + Math.sin(game.delta) * 10;
+      ui.tutorial.y = world.viewport.height - 20 + Math.sin(world.delta) * 10;
     }
 
-    if (droneScalar < 1){
-      droneScalar += 0.003;
+    if (drone.scale < 1){
+      drone.scale += 0.003;
     } else if (tutorialShowing) {
         tutorialShowing = false;
-        stage.removeChild(tutorial);
+        stage.removeChild(ui.tutorial);
     }
 
-    if (state.scanCooldown > 0){
-      state.scanCooldown -= state.cooldownRate;
+    if (scanner.cooldown > 0){
+      scanner.cooldown -= scanner.cooldownRate;
     } else {
-      radar.texture = textures.radar_ready;
+      ui.scanner_state_indicator.texture = textures.radar_ready;
     }
 
-    radar.rotation += .01;
+    ui.scanner_state_indicator.rotation += .01;
 
-    if (scanning) {
-      currentScannerScale += state.cooldownRate + 0.002;
-      scanner.scale.set(currentScannerScale, currentScannerScale);
-      if (currentScannerScale * scanner.texture.width > state.scanDiameter) {
-        scanning = false;
-        stage.removeChild(scanner);
+    if (scanner.scanning) {
+      scanner.scale += scanner.cooldownRate + 0.002;
+      ui.scanner.scale.set(scanner.scale, scanner.scale);
+      if (scanner.scale * ui.scanner.texture.width > scanner.diameter) {
+        scanner.scanning = false;
+        stage.removeChild(ui.scanner);
       }
     }
 
-    radar.scale.set(1 - (state.scanCooldown/state.cooldownTime), 1 - (state.scanCooldown/state.cooldownTime));
-    drone.scale.set(droneScalar, droneScalar);
-    hqHighlight.scale.set(Math.sqrt(Math.pow(Math.sin(game.delta/3)/6+1.2,2)), Math.sqrt(Math.pow(Math.sin(game.delta/3)/6+1.2,2)));
+    ui.scanner_state_indicator.scale.set(1 - (scanner.cooldown/scanner.cooldownTime), 1 - (scanner.cooldown/scanner.cooldownTime));
+    drone.sprite.scale.set(drone.scale, drone.scale);
+    ui.hq_highlighter.scale.set(Math.sqrt(Math.pow(Math.sin(world.delta/3)/6+1.2,2)), Math.sqrt(Math.pow(Math.sin(world.delta/3)/6+1.2,2)));
     renderer.render(stage);
 }
 
 function placeGpu() {
   let buffer = 100;
-  let x = getRandomInt(game.worldWidth - buffer);
-  let y = getRandomInt(game.worldHeight - buffer - 300); // 300 prevents Gpu's spawning in water
+  let x = getRandomInt(world.dimensions.width - buffer);
+  let y = getRandomInt(world.dimensions.height - buffer - 300); // 300 prevents Gpu's spawning in water
 
   const gpu = new PIXI.Sprite(textures.gpu);
   gpu.anchor.set(0.5);
 
-  gpu.x = (city.x - game.worldWidth / 2) + (buffer / 2) + x;
-  gpu.y = (city.y - game.worldHeight / 2 ) + (buffer / 2) + y;
+  gpu.x = (ui.city.x - world.dimensions.width / 2) + (buffer / 2) + x;
+  gpu.y = (ui.city.y - world.dimensions.height / 2 ) + (buffer / 2) + y;
 
-  state.gpuArray.push(gpu);
+  world.gpus.push(gpu);
 }
 
 function scan() {
-  if (state.scanCooldown <= 0){
-    scanning = true;
-    currentScannerScale = 0;
-    state.scanCooldown = state.cooldownTime;
-    scanner.x = drone.x;
-    scanner.y = drone.y;
-    stage.addChild(scanner);
-    radar.texture = textures.radar_empty;
+  if (scanner.cooldown <= 0){
+    scanner.scanning = true;
+    scanner.scale = 0;
+    scanner.cooldown = scanner.cooldownTime;
+    ui.scanner.x = drone.sprite.x;
+    ui.scanner.y = drone.sprite.y;
+    stage.addChild(ui.scanner);
+    ui.scanner_state_indicator.texture = textures.radar_empty;
 
     // Show Gpu's in range
-    state.gpuArray.forEach(function(gpu) {
-      if (distanceBetween(gpu, drone) < (state.scanDiameter / 2)){
+    world.gpus.forEach(function(gpu) {
+      if (distanceBetween(gpu, drone.sprite) < (scanner.diameter / 2)){
         stage.addChild(gpu);
       }
     });
@@ -457,21 +374,21 @@ function scan() {
 }
 
 function loadOntoDrone(gpu){
-  state.gpuOnboard = true;
+  player.gpuOnboard = true;
   stage.removeChild(gpu);
-  arrayRemove(state.gpuArray, gpu);
-  stage.removeChild(drone);
-  stage.addChild(crate);
-  stage.addChild(drone);
-  stage.addChild(hqHighlight);
+  arrayRemove(world.gpus, gpu);
+  stage.removeChild(drone.sprite);
+  stage.addChild(ui.crate);
+  stage.addChild(drone.sprite);
+  stage.addChild(ui.hq_highlighter);
 }
 
 function offloadFromDrone() {
-  stage.removeChild(crate);
-  stage.removeChild(hqHighlight);
-  updateBalance(state.gpuValue);
+  stage.removeChild(ui.crate);
+  stage.removeChild(ui.hq_highlighter);
+  updateBalance(world.gpuValue);
   placeGpu();
-  state.gpuOnboard = false;
+  player.gpuOnboard = false;
 }
 
 function getRandomInt(max) {
@@ -492,26 +409,26 @@ function arrayRemove(array, value) {
 }
 
 function updateRelativePosition(sprite){
-  sprite.x -= droneLeft + droneRight;
-  sprite.y -= droneUp + droneDown;
+  sprite.x -= drone.heading.left + drone.heading.right;
+  sprite.y -= drone.heading.up + drone.heading.down;
 }
 
 function moveTowardCenter(sprite){
-  if (drone.x > city.x){
-    sprite.x += state.movementSpeed;
+  if (drone.sprite.x > ui.city.x){
+    sprite.x += player.speed;
   }
-  if (drone.x < city.x){
-    sprite.x -= state.movementSpeed;
+  if (drone.sprite.x < ui.city.x){
+    sprite.x -= player.speed;
   }
-  if (drone.y > city.y){
-    sprite.y += state.movementSpeed;
+  if (drone.sprite.y > ui.city.y){
+    sprite.y += player.speed;
   }
-  if (drone.y < city.y){
-    sprite.y -= state.movementSpeed;
+  if (drone.sprite.y < ui.city.y){
+    sprite.y -= player.speed;
   }
 }
 
 function updateBalance(amount) {
-  state.playerBalance += amount;
-  balanceText.text = "" + state.playerBalance.toFixed(4);
+  player.balance += amount;
+  balanceText.text = "" + player.balance.toFixed(4);
 }
